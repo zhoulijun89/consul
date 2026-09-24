@@ -363,7 +363,7 @@ func TestAutopilot_CleanupStaleRaftServer(t *testing.T) {
 	}
 }
 
-func TestAutopilot_PromoteNonVoter(t *testing.T) {
+func TestAutopilot_KeepNonVoter(t *testing.T) {
 	if testing.Short() {
 		t.Skip("too slow for testing.Short")
 	}
@@ -422,7 +422,8 @@ func TestAutopilot_PromoteNonVoter(t *testing.T) {
 		}
 	})
 
-	// Make sure it ends up as a voter.
+	// Make sure it remains a non-voter after the stabilization period.
+	time.Sleep(s1.config.AutopilotConfig.ServerStabilizationTime + 2*s1.config.AutopilotInterval)
 	retry.Run(t, func(r *retry.R) {
 		future := s1.raft.GetConfiguration()
 		if err := future.Error(); err != nil {
@@ -433,7 +434,7 @@ func TestAutopilot_PromoteNonVoter(t *testing.T) {
 		if len(servers) != 2 {
 			r.Fatalf("bad: %v", servers)
 		}
-		if servers[1].Suffrage != raft.Voter {
+		if servers[1].Suffrage != raft.Nonvoter {
 			r.Fatalf("bad: %v", servers)
 		}
 	})
